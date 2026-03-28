@@ -4,6 +4,7 @@ import { Flag, Gamepad2, Share2, Sparkles } from "lucide-react";
 import { LandingScreen } from "@/components/landing-screen";
 import { ModeSelector } from "@/components/mode-selector";
 import { QuizPanel } from "@/components/quiz-panel";
+import { RefactorLabPanel } from "@/components/refactor-lab-panel";
 import { ResultScreen } from "@/components/result-screen";
 import { TypingPanel } from "@/components/typing-panel";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,7 @@ function App({ catalog = termCatalog, shuffleItems = shuffleArray }: AppProps) {
   const [quizState, setQuizState] = useState(() =>
     createQuizState(orderItems(catalog.quizItems, false, shuffleItems)),
   );
+  const isRefactorLab = mode === "refactorLab";
 
   useEffect(() => {
     setStage("landing");
@@ -56,17 +58,26 @@ function App({ catalog = termCatalog, shuffleItems = shuffleArray }: AppProps) {
   }, [catalog, shuffleItems]);
 
   const activeSummary = mode === "wordPractice" ? wordPracticeState.summary : quizState.summary;
-  const gameplayTitle = mode === "wordPractice" ? "낱말 연습 진행" : "용어 퀴즈 진행";
+  const gameplayTitle =
+    mode === "wordPractice"
+      ? "낱말 연습 진행"
+      : mode === "termQuiz"
+        ? "용어 퀴즈 진행"
+        : "구조화 연습 진행";
   const gameplayDescription =
     mode === "wordPractice"
       ? "보이는 용어를 그대로 입력하며 정확도와 CPM에 집중합니다."
-      : "질문을 보고 정답 용어를 떠올려 완전 일치로 제출합니다.";
-  const shareText = buildResultShareText({
-    cpm: mode === "wordPractice" ? getWordPracticeCpm(wordPracticeState) : undefined,
-    isRandomOrder,
-    mode,
-    summary: activeSummary,
-  });
+      : mode === "termQuiz"
+        ? "질문을 보고 정답 용어를 떠올려 완전 일치로 제출합니다."
+        : "위젯화, 함수화, 그대로 두기 판단을 단계적으로 익힙니다.";
+  const shareText = isRefactorLab
+    ? ""
+    : buildResultShareText({
+        cpm: mode === "wordPractice" ? getWordPracticeCpm(wordPracticeState) : undefined,
+        isRandomOrder,
+        mode,
+        summary: activeSummary,
+      });
 
   function createNextWordPracticeState() {
     return createWordPracticeState(orderItems(catalog.terms, isRandomOrder, shuffleItems));
@@ -91,7 +102,7 @@ function App({ catalog = termCatalog, shuffleItems = shuffleArray }: AppProps) {
 
     if (mode === "wordPractice") {
       setWordPracticeState(createNextWordPracticeState());
-    } else {
+    } else if (mode === "termQuiz") {
       setQuizState(createNextQuizState());
     }
 
@@ -103,7 +114,7 @@ function App({ catalog = termCatalog, shuffleItems = shuffleArray }: AppProps) {
 
     if (mode === "wordPractice") {
       setWordPracticeState(createNextWordPracticeState());
-    } else {
+    } else if (mode === "termQuiz") {
       setQuizState(createNextQuizState());
     }
 
@@ -152,93 +163,97 @@ function App({ catalog = termCatalog, shuffleItems = shuffleArray }: AppProps) {
             ) : null}
 
             {stage === "gameplay" ? (
-              <div className="space-y-6">
-                <Card className="border-0 bg-white/78 shadow-none backdrop-blur">
-                  <CardHeader className="gap-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant="outline">
-                            {mode === "wordPractice" ? "낱말 연습" : "용어 퀴즈"}
-                          </Badge>
-                          <Badge variant={isRandomOrder ? "secondary" : "outline"}>
-                            {isRandomOrder ? "랜덤 출제" : "순서대로"}
-                          </Badge>
+              isRefactorLab ? (
+                <RefactorLabPanel onBackToSelection={handleOpenSelection} />
+              ) : (
+                <div className="space-y-6">
+                  <Card className="border-0 bg-white/78 shadow-none backdrop-blur">
+                    <CardHeader className="gap-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="outline">
+                              {mode === "wordPractice" ? "낱말 연습" : "용어 퀴즈"}
+                            </Badge>
+                            <Badge variant={isRandomOrder ? "secondary" : "outline"}>
+                              {isRandomOrder ? "랜덤 출제" : "순서대로"}
+                            </Badge>
+                          </div>
+                          <CardTitle className="text-2xl">{gameplayTitle}</CardTitle>
+                          <CardDescription className="leading-6">
+                            {gameplayDescription}
+                          </CardDescription>
                         </div>
-                        <CardTitle className="text-2xl">{gameplayTitle}</CardTitle>
-                        <CardDescription className="leading-6">
-                          {gameplayDescription}
-                        </CardDescription>
-                      </div>
 
-                      <div className="flex flex-wrap gap-2">
-                        <Button type="button" variant="ghost" onClick={handleOpenSelection}>
-                          게임 선택으로
-                        </Button>
-                        <Button type="button" variant="outline" onClick={handleReplayCurrentGame}>
-                          같은 게임 다시 시작
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          <Button type="button" variant="ghost" onClick={handleOpenSelection}>
+                            게임 선택으로
+                          </Button>
+                          <Button type="button" variant="outline" onClick={handleReplayCurrentGame}>
+                            같은 게임 다시 시작
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="grid gap-3 md:grid-cols-4">
-                    <StatusTile
-                      label="해결된 문항"
-                      value={`${getSolvedCount(activeSummary)} / ${activeSummary.total}`}
-                    />
-                    <StatusTile label="진행률" value={`${getProgressPercent(activeSummary)}%`} />
-                    <StatusTile label="최고 스트릭" value={`${activeSummary.bestStreak}`} />
-                    <StatusTile
-                      label={mode === "wordPractice" ? "실시간 CPM" : "현재 스트릭"}
-                      value={
-                        mode === "wordPractice"
-                          ? `${getWordPracticeCpm(wordPracticeState)}`
-                          : `${activeSummary.currentStreak}`
+                    </CardHeader>
+                    <CardContent className="grid gap-3 md:grid-cols-4">
+                      <StatusTile
+                        label="해결된 문항"
+                        value={`${getSolvedCount(activeSummary)} / ${activeSummary.total}`}
+                      />
+                      <StatusTile label="진행률" value={`${getProgressPercent(activeSummary)}%`} />
+                      <StatusTile label="최고 스트릭" value={`${activeSummary.bestStreak}`} />
+                      <StatusTile
+                        label={mode === "wordPractice" ? "실시간 CPM" : "현재 스트릭"}
+                        value={
+                          mode === "wordPractice"
+                            ? `${getWordPracticeCpm(wordPracticeState)}`
+                            : `${activeSummary.currentStreak}`
+                        }
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {mode === "wordPractice" ? (
+                    <TypingPanel
+                      onInputChange={(value) =>
+                        setWordPracticeState((current) => {
+                          const nextState = updateWordPracticeState(current, value);
+
+                          if (nextState.completed) {
+                            setStage("results");
+                            setShareFeedback("idle");
+                          }
+
+                          return nextState;
+                        })
                       }
+                      onRestart={handleReplayCurrentGame}
+                      state={wordPracticeState}
                     />
-                  </CardContent>
-                </Card>
+                  ) : (
+                    <QuizPanel
+                      onInputChange={(value) =>
+                        setQuizState((current) => updateQuizInput(current, value))
+                      }
+                      onNext={() => setQuizState((current) => advanceQuizState(current))}
+                      onRestart={handleReplayCurrentGame}
+                      onSubmit={() =>
+                        setQuizState((current) => {
+                          const nextState = submitQuizAnswer(current);
 
-                {mode === "wordPractice" ? (
-                  <TypingPanel
-                    onInputChange={(value) =>
-                      setWordPracticeState((current) => {
-                        const nextState = updateWordPracticeState(current, value);
+                          if (nextState.completed) {
+                            setStage("results");
+                            setShareFeedback("idle");
+                          }
 
-                        if (nextState.completed) {
-                          setStage("results");
-                          setShareFeedback("idle");
-                        }
-
-                        return nextState;
-                      })
-                    }
-                    onRestart={handleReplayCurrentGame}
-                    state={wordPracticeState}
-                  />
-                ) : (
-                  <QuizPanel
-                    onInputChange={(value) =>
-                      setQuizState((current) => updateQuizInput(current, value))
-                    }
-                    onNext={() => setQuizState((current) => advanceQuizState(current))}
-                    onRestart={handleReplayCurrentGame}
-                    onSubmit={() =>
-                      setQuizState((current) => {
-                        const nextState = submitQuizAnswer(current);
-
-                        if (nextState.completed) {
-                          setStage("results");
-                          setShareFeedback("idle");
-                        }
-
-                        return nextState;
-                      })
-                    }
-                    state={quizState}
-                  />
-                )}
-              </div>
+                          return nextState;
+                        })
+                      }
+                      state={quizState}
+                    />
+                  )}
+                </div>
+              )
             ) : null}
 
             {stage === "results" ? (

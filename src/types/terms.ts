@@ -1,4 +1,4 @@
-export type PracticeMode = "wordPractice" | "termQuiz";
+export type PracticeMode = "wordPractice" | "termQuiz" | "refactorLab";
 
 export interface AuthoredTermEntry {
   id: string;

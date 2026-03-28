@@ -31,11 +31,14 @@ export function ResultScreen({
   shareText,
   summary,
 }: ResultScreenProps) {
-  const modeLabel = mode === "wordPractice" ? "낱말 연습" : "용어 퀴즈";
+  const modeLabel =
+    mode === "wordPractice" ? "낱말 연습" : mode === "termQuiz" ? "용어 퀴즈" : "구조화 연습";
   const subtitle =
     mode === "wordPractice"
       ? "타이핑 속도와 정확도를 함께 확인하고, 같은 모드로 다시 도전하거나 다른 게임을 선택할 수 있습니다."
-      : "질문 기반 회상 연습 결과를 확인하고, 공유 문구를 복사해 기록을 남길 수 있습니다.";
+      : mode === "termQuiz"
+        ? "질문 기반 회상 연습 결과를 확인하고, 공유 문구를 복사해 기록을 남길 수 있습니다."
+        : "구조화 연습 결과를 확인하고, 다음 학습 흐름을 이어갈 수 있습니다.";
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1.45fr_0.95fr]">

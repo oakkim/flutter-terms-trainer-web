@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Brain, Keyboard, Shuffle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Brain, Keyboard, Route, Shuffle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,7 +52,7 @@ export function ModeSelector({
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
           <ModeOptionCard
             ariaLabel="낱말 연습 선택하기"
             description={`${termCount}개 용어를 철자 그대로 따라 입력하며 정확도와 CPM을 함께 체크합니다.`}
@@ -69,55 +69,86 @@ export function ModeSelector({
             onClick={() => onModeChange("termQuiz")}
             title="용어 퀴즈"
           />
+          <ModeOptionCard
+            ariaLabel="위젯화 함수화 연습 선택하기"
+            description="위젯화, 함수화, 그대로 두기 판단과 순서 맞추기를 단계적으로 연습합니다."
+            icon={<Route className="size-4" />}
+            isSelected={mode === "refactorLab"}
+            onClick={() => onModeChange("refactorLab")}
+            title="구조화 연습"
+          />
         </div>
 
-        <div className="space-y-3 rounded-3xl border border-border/70 bg-background/70 p-5">
-          <div className="flex items-start justify-between gap-3">
+        {mode === "refactorLab" ? (
+          <div className="space-y-3 rounded-3xl border border-border/70 bg-background/70 p-5">
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm font-semibold">
-                <Shuffle className="size-4" />
-                출제 순서
+                <Route className="size-4" />
+                구조화 연습 안내
               </div>
               <p className="text-xs leading-5 text-muted-foreground">
-                랜덤 출제를 켜면 이번 게임이 새 순서로 시작됩니다.
+                이 모드는 정해진 순서대로 단계형 연습을 진행합니다. 드래그앤드롭, 보조 버튼, 회상
+                문제까지 한 흐름으로 이어집니다.
               </p>
             </div>
-            <Badge variant={isRandomOrder ? "secondary" : "outline"}>
-              {isRandomOrder ? "랜덤" : "순차"}
-            </Badge>
+            <Badge variant="outline">고정 순서 실습</Badge>
           </div>
+        ) : (
+          <div className="space-y-3 rounded-3xl border border-border/70 bg-background/70 p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Shuffle className="size-4" />
+                  출제 순서
+                </div>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  랜덤 출제를 켜면 이번 게임이 새 순서로 시작됩니다.
+                </p>
+              </div>
+              <Badge variant={isRandomOrder ? "secondary" : "outline"}>
+                {isRandomOrder ? "랜덤" : "순차"}
+              </Badge>
+            </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button
-              aria-pressed={!isRandomOrder}
-              onClick={() => onRandomOrderChange(false)}
-              size="lg"
-              type="button"
-              variant={!isRandomOrder ? "default" : "outline"}
-            >
-              순서대로
-            </Button>
-            <Button
-              aria-pressed={isRandomOrder}
-              onClick={() => onRandomOrderChange(true)}
-              size="lg"
-              type="button"
-              variant={isRandomOrder ? "default" : "outline"}
-            >
-              랜덤 출제
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                aria-pressed={!isRandomOrder}
+                onClick={() => onRandomOrderChange(false)}
+                size="lg"
+                type="button"
+                variant={!isRandomOrder ? "default" : "outline"}
+              >
+                순서대로
+              </Button>
+              <Button
+                aria-pressed={isRandomOrder}
+                onClick={() => onRandomOrderChange(true)}
+                size="lg"
+                type="button"
+                variant={isRandomOrder ? "default" : "outline"}
+              >
+                랜덤 출제
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-dashed border-border/80 bg-background/60 p-4">
           <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
             현재 선택된 모드는{" "}
             <span className="font-semibold text-slate-900">{getModeLabel(mode)}</span>
-            이고, 출제 순서는{" "}
-            <span className="font-semibold text-slate-900">
-              {isRandomOrder ? "랜덤 출제" : "순서대로"}
-            </span>
-            입니다.
+            이고,{" "}
+            {mode === "refactorLab" ? (
+              <span className="font-semibold text-slate-900">고정 순서의 단계형 실습</span>
+            ) : (
+              <>
+                출제 순서는{" "}
+                <span className="font-semibold text-slate-900">
+                  {isRandomOrder ? "랜덤 출제" : "순서대로"}
+                </span>
+                입니다.
+              </>
+            )}
           </p>
           <Button type="button" size="lg" onClick={onStart}>
             이 모드 시작
@@ -170,5 +201,13 @@ function ModeOptionCard({
 }
 
 function getModeLabel(mode: PracticeMode): string {
-  return mode === "wordPractice" ? "낱말 연습" : "용어 퀴즈";
+  if (mode === "wordPractice") {
+    return "낱말 연습";
+  }
+
+  if (mode === "termQuiz") {
+    return "용어 퀴즈";
+  }
+
+  return "구조화 연습";
 }

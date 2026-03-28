@@ -13,7 +13,8 @@ export function buildResultShareText({
   mode,
   summary,
 }: ResultSharePayload): string {
-  const modeLabel = mode === "wordPractice" ? "낱말 연습" : "용어 퀴즈";
+  const modeLabel =
+    mode === "wordPractice" ? "낱말 연습" : mode === "termQuiz" ? "용어 퀴즈" : "구조화 연습";
   const lines = [
     "Flutter 타이핑 스튜디오 결과",
     `모드: ${modeLabel}`,

@@ -1,0 +1,1767 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>위젯화 / 함수화 학습 프로토타입</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #fff9f1;
+        --panel: rgba(255, 255, 255, 0.86);
+        --panel-strong: #ffffff;
+        --line: rgba(112, 84, 48, 0.16);
+        --line-strong: rgba(112, 84, 48, 0.28);
+        --text: #22180f;
+        --muted: #695949;
+        --accent: #ef7f45;
+        --accent-soft: rgba(239, 127, 69, 0.14);
+        --blue-soft: rgba(83, 132, 255, 0.12);
+        --good: #1f7a49;
+        --good-soft: rgba(31, 122, 73, 0.12);
+        --warn: #a95a0c;
+        --warn-soft: rgba(169, 90, 12, 0.12);
+        --bad: #b42318;
+        --bad-soft: rgba(180, 35, 24, 0.12);
+        --shadow: 0 32px 80px -42px rgba(61, 39, 16, 0.34);
+        font-family:
+          "Pretendard Variable", "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo",
+          "Malgun Gothic", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at top left, rgba(255, 177, 134, 0.34), transparent 25%),
+          radial-gradient(circle at top right, rgba(138, 173, 255, 0.24), transparent 28%),
+          linear-gradient(180deg, #fffaf2 0%, #fffefb 48%, #fff7ef 100%);
+        color: var(--text);
+      }
+
+      body.capture-mode {
+        background:
+          radial-gradient(circle at top left, rgba(255, 177, 134, 0.22), transparent 24%),
+          linear-gradient(180deg, #fffaf2 0%, #fffefb 48%, #fff7ef 100%);
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      .page {
+        width: min(1120px, calc(100vw - 32px));
+        margin: 28px auto;
+        padding: 28px;
+        border: 1px solid var(--line);
+        border-radius: 32px;
+        background:
+          radial-gradient(circle at top, rgba(255, 140, 72, 0.12), transparent 34%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 250, 243, 0.9));
+        box-shadow: var(--shadow);
+      }
+
+      body.capture-mode .page {
+        width: min(980px, calc(100vw - 20px));
+        margin: 10px auto;
+        padding: 18px;
+        border-radius: 24px;
+      }
+
+      body.capture-mode .hero {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      body.capture-mode .summary {
+        display: none;
+      }
+
+      body.capture-mode h1 {
+        font-size: clamp(1.9rem, 4vw, 3rem);
+        margin: 10px 0 8px;
+      }
+
+      body.capture-mode .lede {
+        max-width: 100%;
+        font-size: 1rem;
+        line-height: 1.6;
+      }
+
+      body.capture-mode .hero-actions,
+      body.capture-mode .meta-row,
+      body.capture-mode .progress-wrap {
+        margin-top: 12px;
+      }
+
+      body.capture-mode .pill {
+        padding: 8px 11px;
+        font-size: 13px;
+      }
+
+      body.capture-mode .panel {
+        padding: 18px;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.75fr) minmax(320px, 0.95fr);
+        gap: 18px;
+        align-items: start;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: #8d4718;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+      }
+
+      h1 {
+        margin: 16px 0 14px;
+        max-width: 10.5ch;
+        font-size: clamp(2rem, 4.4vw, 3.55rem);
+        line-height: 1.02;
+        letter-spacing: -0.04em;
+        word-break: keep-all;
+        text-wrap: balance;
+      }
+
+      .lede {
+        margin: 0;
+        max-width: 38rem;
+        color: #3d4f73;
+        font-size: 1.1rem;
+        line-height: 1.75;
+        word-break: keep-all;
+      }
+
+      .summary {
+        display: grid;
+        gap: 12px;
+      }
+
+      .summary-card,
+      .panel,
+      .choice,
+      .step,
+      .result-card {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        border-radius: 24px;
+      }
+
+      .summary-card {
+        padding: 18px;
+      }
+
+      .summary-card strong {
+        display: block;
+        margin-top: 10px;
+        font-size: clamp(1.55rem, 2.6vw, 2.15rem);
+        line-height: 1.12;
+        letter-spacing: -0.04em;
+        word-break: keep-all;
+        text-wrap: balance;
+      }
+
+      .summary-card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.6;
+        word-break: keep-all;
+      }
+
+      .meta-row {
+        margin-top: 22px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .hero-actions {
+        margin-top: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .pill {
+        padding: 10px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.7);
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .progress-wrap {
+        margin-top: 22px;
+      }
+
+      .progress-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .progress-bar {
+        margin-top: 10px;
+        height: 12px;
+        border-radius: 999px;
+        background: rgba(88, 61, 33, 0.08);
+        overflow: hidden;
+      }
+
+      .progress-bar span {
+        display: block;
+        height: 100%;
+        width: 0;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #ff9558 0%, #f97316 55%, #ffcc7a 100%);
+        transition: width 180ms ease;
+      }
+
+      .workspace {
+        margin-top: 26px;
+      }
+
+      .panel {
+        padding: 22px;
+      }
+
+      .panel-header {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 14px;
+        align-items: flex-start;
+      }
+
+      .panel-header h2 {
+        margin: 4px 0 8px;
+        font-size: 1.65rem;
+        letter-spacing: -0.03em;
+        line-height: 1.18;
+        word-break: keep-all;
+        text-wrap: balance;
+      }
+
+      .panel-header p,
+      .hint,
+      .explanation,
+      .code-caption {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+        word-break: keep-all;
+      }
+
+      .stage-badge {
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: var(--blue-soft);
+        color: #375299;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .grid-two {
+        margin-top: 20px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .code-block {
+        padding: 18px;
+        overflow: auto;
+        border-radius: 22px;
+        background: #171717;
+        color: #f8fafc;
+        font-size: 14px;
+        line-height: 1.72;
+        border: 1px solid rgba(255, 255, 255, 0.07);
+      }
+
+      .code-block mark {
+        padding: 0 4px;
+        border-radius: 6px;
+        color: inherit;
+        background: rgba(249, 170, 72, 0.28);
+      }
+
+      .subgoal-list,
+      .tips-list,
+      .compare-list {
+        display: grid;
+        gap: 12px;
+        margin: 18px 0 0;
+      }
+
+      .subgoal,
+      .tip,
+      .compare-item {
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.74);
+        border: 1px solid var(--line);
+      }
+
+      .subgoal strong,
+      .tip strong,
+      .compare-item strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .question-shell {
+        margin-top: 20px;
+        display: grid;
+        gap: 18px;
+      }
+
+      .question-meta {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .counter {
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .choice-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .choice {
+        width: 100%;
+        padding: 16px;
+        text-align: left;
+        cursor: pointer;
+        transition:
+          transform 120ms ease,
+          border-color 120ms ease,
+          background 120ms ease;
+      }
+
+      .choice:hover {
+        transform: translateY(-1px);
+        border-color: var(--line-strong);
+        background: rgba(255, 255, 255, 0.98);
+      }
+
+      .choice[data-active="true"] {
+        border-color: rgba(232, 117, 48, 0.56);
+        background: var(--accent-soft);
+      }
+
+      .choice[data-state="correct"] {
+        border-color: rgba(31, 122, 73, 0.28);
+        background: var(--good-soft);
+      }
+
+      .choice[data-state="wrong"] {
+        border-color: rgba(180, 35, 24, 0.22);
+        background: var(--bad-soft);
+      }
+
+      .choice-title {
+        font-weight: 700;
+      }
+
+      .choice-body {
+        margin-top: 6px;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .feedback {
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+      }
+
+      .feedback.good {
+        background: var(--good-soft);
+        border-color: rgba(31, 122, 73, 0.24);
+      }
+
+      .feedback.warn {
+        background: var(--warn-soft);
+        border-color: rgba(169, 90, 12, 0.22);
+      }
+
+      .feedback.bad {
+        background: var(--bad-soft);
+        border-color: rgba(180, 35, 24, 0.22);
+      }
+
+      .steps {
+        margin-top: 18px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .steps-hint {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      .step {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 14px 16px;
+        cursor: grab;
+        transition:
+          border-color 120ms ease,
+          background 120ms ease,
+          transform 120ms ease;
+      }
+
+      .step:hover {
+        border-color: var(--line-strong);
+        background: rgba(255, 255, 255, 0.98);
+      }
+
+      .step.is-dragging {
+        opacity: 0.5;
+        transform: scale(0.99);
+      }
+
+      .step.is-drop-target {
+        border-color: rgba(232, 117, 48, 0.56);
+        background: var(--accent-soft);
+      }
+
+      .step strong {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        background: rgba(90, 53, 19, 0.08);
+        font-size: 14px;
+      }
+
+      .step p {
+        margin: 0;
+        flex: 1;
+        line-height: 1.55;
+      }
+
+      .drag-handle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        border: 1px dashed var(--line-strong);
+        background: rgba(255, 255, 255, 0.82);
+        color: var(--muted);
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .step-actions {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .field-grid {
+        margin-top: 18px;
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .field-card {
+        padding: 18px;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.84);
+        border: 1px solid var(--line);
+      }
+
+      .field-card h3 {
+        margin: 0 0 10px;
+        font-size: 1.06rem;
+      }
+
+      .fill-code {
+        margin-top: 14px;
+        padding: 14px;
+        border-radius: 18px;
+        background: #171717;
+        color: #f8fafc;
+        font-size: 14px;
+        line-height: 1.72;
+        overflow: auto;
+      }
+
+      .blank {
+        width: 156px;
+        padding: 8px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.12);
+        color: inherit;
+      }
+
+      .blank::placeholder {
+        color: rgba(255, 255, 255, 0.7);
+      }
+
+      .blank.is-correct {
+        border-color: rgba(66, 214, 130, 0.8);
+        background: rgba(66, 214, 130, 0.16);
+      }
+
+      .blank.is-wrong {
+        border-color: rgba(255, 102, 102, 0.7);
+        background: rgba(255, 102, 102, 0.12);
+      }
+
+      .completion-review {
+        margin-top: 16px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .completion-chip {
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.82);
+      }
+
+      .completion-chip.good {
+        background: var(--good-soft);
+        border-color: rgba(31, 122, 73, 0.24);
+      }
+
+      .completion-chip.bad {
+        background: var(--bad-soft);
+        border-color: rgba(180, 35, 24, 0.22);
+      }
+
+      .retrieval-list {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .retrieval-item {
+        padding: 18px;
+        border-radius: 22px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.82);
+      }
+
+      .retrieval-item h3 {
+        margin: 0 0 12px;
+        font-size: 1rem;
+        line-height: 1.6;
+      }
+
+      .option-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .radio-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.9);
+        cursor: pointer;
+      }
+
+      .radio-chip input {
+        margin: 0;
+      }
+
+      .retrieval-answer {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px dashed var(--line);
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .retrieval-answer strong {
+        color: var(--text);
+      }
+
+      .steps-solution {
+        margin-top: 14px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        border: 1px dashed rgba(180, 35, 24, 0.28);
+        background: rgba(255, 255, 255, 0.82);
+      }
+
+      .steps-solution ol {
+        margin: 10px 0 0 18px;
+        padding: 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .actions {
+        margin-top: 22px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .btn {
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 18px;
+        font-weight: 700;
+        cursor: pointer;
+        transition:
+          transform 120ms ease,
+          opacity 120ms ease,
+          background 120ms ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn:disabled {
+        opacity: 0.42;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-primary {
+        background: #22180f;
+        color: #fff;
+      }
+
+      .btn-secondary {
+        background: rgba(34, 24, 15, 0.08);
+        color: var(--text);
+      }
+
+      .btn-ghost {
+        background: rgba(255, 255, 255, 0.76);
+        color: var(--text);
+        border: 1px solid var(--line);
+      }
+
+      .result-grid {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px;
+      }
+
+      .result-card {
+        padding: 18px;
+      }
+
+      .result-card p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .result-card strong {
+        display: block;
+        margin-top: 10px;
+        font-size: 2rem;
+        letter-spacing: -0.04em;
+      }
+
+      .result-callout {
+        margin-top: 18px;
+        padding: 18px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, rgba(255, 157, 91, 0.14), rgba(97, 146, 255, 0.1));
+        border: 1px solid var(--line);
+      }
+
+      .result-callout h3 {
+        margin: 0 0 10px;
+        font-size: 1.15rem;
+      }
+
+      .result-callout p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      @media (max-width: 900px) {
+        .hero,
+        .grid-two,
+        .field-grid,
+        .result-grid,
+        .retrieval-list {
+          grid-template-columns: 1fr;
+        }
+
+        .page {
+          width: min(100vw - 16px, 1120px);
+          margin: 8px auto;
+          padding: 18px;
+          border-radius: 26px;
+        }
+
+        .step {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <section class="hero">
+        <div>
+          <span class="eyebrow">초보자용 리팩터링 연습</span>
+          <h1>위젯화와 함수화<br />감각 익히기</h1>
+          <p class="lede">
+            반복되는 화면 덩어리는 위젯으로, 반복되는 계산과 동작은 함수로 나누는 판단을
+            짧은 단계로 연습합니다. 설명만 읽는 대신 직접 구분하고, 순서를 맞추고, 빈칸을
+            채운 뒤, 마지막에 다시 떠올리게 구성했습니다.
+          </p>
+          <div class="hero-actions" id="heroActions">
+            <button class="btn btn-primary" type="button" id="heroStartButton">시작하기</button>
+          </div>
+          <div class="meta-row">
+            <span class="pill">예시 보기 1단계</span>
+            <span class="pill">판단 문제 8개</span>
+            <span class="pill">순서 맞추기 2개</span>
+            <span class="pill">빈칸 4개</span>
+            <span class="pill">회상 문제 6개</span>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-header">
+              <span id="stageLabel">1 / 5 단계</span>
+              <span id="stageName">예시 보기</span>
+            </div>
+            <div class="progress-bar">
+              <span id="progressFill"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="summary-card">
+            <p>학습 원칙</p>
+            <strong>구분하기 먼저</strong>
+            <p>처음부터 자유 코딩보다, 어디를 나눌지 판단하는 감각을 먼저 익힙니다.</p>
+          </div>
+          <div class="summary-card">
+            <p>핵심 규칙</p>
+            <strong>화면은 위젯, 행동은 함수</strong>
+            <p>단, 한 번만 쓰는 간단한 조각은 그대로 두는 선택도 연습합니다.</p>
+          </div>
+          <div class="summary-card">
+            <p>테스트 방식</p>
+            <strong>즉시 피드백</strong>
+            <p>각 단계마다 정답 설명과 다음 판단 기준을 바로 확인할 수 있습니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <main class="workspace" id="workspace"></main>
+    </div>
+
+    <script src="./refactor-lab-data.js"></script>
+    <script>
+      const stages = [
+        { key: "example", title: "예시 보기" },
+        { key: "classification", title: "분류하기" },
+        { key: "ordering", title: "순서 맞추기" },
+        { key: "completion", title: "빈칸 채우기" },
+        { key: "retrieval", title: "회상 퀴즈" },
+      ];
+      const { choiceLabels, classificationQuestions, orderingProblems, retrievalQuestions } =
+        window.refactorLabData;
+
+      const state = {
+        stageIndex: 0,
+        classIndex: 0,
+        classSelected: "",
+        classSubmitted: false,
+        classCorrect: 0,
+        classificationHistory: [],
+        orderIndex: 0,
+        orderItems: [...orderingProblems[0].initial],
+        orderChecked: false,
+        orderCorrect: false,
+        orderCorrectCount: 0,
+        draggedOrderIndex: null,
+        completionSubmitted: false,
+        completionCorrect: 0,
+        completionValues: {
+          widgetExtends: "",
+          widgetBuild: "",
+          functionName: "",
+          functionReturn: "",
+        },
+        retrievalSubmitted: false,
+        retrievalValues: {
+          r1: "",
+          r2: "",
+          r3: "",
+          r4: "",
+          r5: "",
+          r6: "",
+        },
+        retrievalCorrect: 0,
+      };
+
+      const workspace = document.getElementById("workspace");
+      const progressFill = document.getElementById("progressFill");
+      const stageLabel = document.getElementById("stageLabel");
+      const stageName = document.getElementById("stageName");
+      const heroActions = document.getElementById("heroActions");
+      const heroStartButton = document.getElementById("heroStartButton");
+
+      function getInitialConfig() {
+        const params = new URLSearchParams(window.location.search || "");
+        const stageKey = params.get("stage");
+        const stageIndex = stages.findIndex((stage) => stage.key === stageKey);
+
+        return {
+          captureMode: params.get("capture") === "1",
+          stageIndex: stageIndex >= 0 ? stageIndex : 0,
+          retrievalResult: params.get("result") === "1" && stageKey === "retrieval",
+        };
+      }
+
+      function applyInitialConfig() {
+        const config = getInitialConfig();
+
+        if (config.captureMode && document.body?.classList) {
+          document.body.classList.add("capture-mode");
+        }
+
+        if (config.retrievalResult) {
+          state.stageIndex = 4;
+
+          for (const question of retrievalQuestions) {
+            state.retrievalValues[question.id] = question.answer;
+          }
+
+          state.retrievalSubmitted = true;
+          state.retrievalCorrect = retrievalQuestions.length;
+          state.classCorrect = Math.max(state.classCorrect, 6);
+          state.orderCorrectCount = orderingProblems.length;
+          state.completionCorrect = 4;
+          return;
+        }
+
+        state.stageIndex = config.stageIndex;
+      }
+
+      function escapeHtml(value) {
+        return value
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+      }
+
+      function normalized(value) {
+        return value.trim();
+      }
+
+      function getChoiceState(choiceKey, answerKey, selectedKey, submitted) {
+        if (!submitted) {
+          return selectedKey === choiceKey ? "active" : "default";
+        }
+
+        if (choiceKey === answerKey) {
+          return "correct";
+        }
+
+        if (choiceKey === selectedKey && selectedKey !== answerKey) {
+          return "wrong";
+        }
+
+        return "default";
+      }
+
+      function getCompletionChecks() {
+        const functionName = normalized(state.completionValues.functionName);
+
+        return {
+          widgetExtends: normalized(state.completionValues.widgetExtends) === "StatelessWidget",
+          widgetBuild: normalized(state.completionValues.widgetBuild) === "build",
+          functionReturn: normalized(state.completionValues.functionReturn) === "Color",
+          functionName:
+            /^[A-Za-z_][A-Za-z0-9_]*$/.test(functionName) &&
+            functionName.length >= 3 &&
+            !["build", "widget", "color"].includes(functionName.toLowerCase()),
+        };
+      }
+
+      function setStage(nextIndex) {
+        state.stageIndex = nextIndex;
+        render();
+      }
+
+      function moveOrderItem(index, direction) {
+        const nextIndex = index + direction;
+
+        if (nextIndex < 0 || nextIndex >= state.orderItems.length) {
+          return;
+        }
+
+        const nextItems = [...state.orderItems];
+        const current = nextItems[index];
+        nextItems[index] = nextItems[nextIndex];
+        nextItems[nextIndex] = current;
+        state.orderItems = nextItems;
+        render();
+      }
+
+      function setOrderingProblem(index) {
+        state.orderIndex = index;
+        state.orderItems = [...orderingProblems[index].initial];
+        state.orderChecked = false;
+        state.orderCorrect = false;
+        state.draggedOrderIndex = null;
+      }
+
+      function reorderOrderItems(fromIndex, toIndex) {
+        if (fromIndex === toIndex || fromIndex === null || toIndex === null) {
+          return;
+        }
+
+        const nextItems = [...state.orderItems];
+        const [movedItem] = nextItems.splice(fromIndex, 1);
+        nextItems.splice(toIndex, 0, movedItem);
+        state.orderItems = nextItems;
+        state.draggedOrderIndex = null;
+        renderOrderingStage();
+      }
+
+      function render() {
+        const stage = stages[state.stageIndex];
+        stageLabel.textContent = `${state.stageIndex + 1} / ${stages.length} 단계`;
+        stageName.textContent = stage.title;
+        progressFill.style.width = `${((state.stageIndex + 1) / stages.length) * 100}%`;
+        heroActions.style.display = stage.key === "example" ? "flex" : "none";
+
+        if (stage.key === "example") {
+          renderExampleStage();
+          return;
+        }
+
+        if (stage.key === "classification") {
+          renderClassificationStage();
+          return;
+        }
+
+        if (stage.key === "ordering") {
+          renderOrderingStage();
+          return;
+        }
+
+        if (stage.key === "completion") {
+          renderCompletionStage();
+          return;
+        }
+
+        renderRetrievalStage();
+      }
+
+      function renderExampleStage() {
+        workspace.innerHTML = `
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <span class="stage-badge">예시 먼저 보기</span>
+                <h2>먼저 “무엇을 왜 나누는지” 보면서 시작합니다</h2>
+                <p>
+                  초보자에게는 완성 코드를 바로 작성시키기보다, 반복 덩어리와 역할을 먼저
+                  보이게 하는 편이 더 잘 맞습니다.
+                </p>
+              </div>
+              <div class="actions" style="margin-top: 0;">
+                <button class="btn btn-primary" type="button" data-start-prototype="true">
+                  시작하기
+                </button>
+              </div>
+            </div>
+
+            <div class="grid-two">
+              <div>
+                <p class="code-caption">예시 A: 반복되는 화면 덩어리</p>
+                <pre class="code-block">Column(
+  children: [
+    <mark>Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Text("총 문제 수"),
+          Text("12"),
+        ],
+      ),
+    )</mark>,
+    const SizedBox(height: 12),
+    <mark>Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Text("정답 수"),
+          Text("8"),
+        ],
+      ),
+    )</mark>,
+  ],
+)</pre>
+                <div class="subgoal-list">
+                  <div class="subgoal">
+                    <strong>서브골 1. 반복 덩어리 찾기</strong>
+                    텍스트만 다르고 구조가 같은 카드가 두 번 이상 나오면 위젯 후보입니다.
+                  </div>
+                  <div class="subgoal">
+                    <strong>서브골 2. 바깥에서 받을 값 찾기</strong>
+                    label, value처럼 달라지는 것만 props로 빼면 됩니다.
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p class="code-caption">예시 B: 반복되는 계산 규칙</p>
+                <pre class="code-block">Color getLevelColor(int score) {
+  if (score &gt;= 80) return Colors.green;
+  if (score &gt;= 50) return Colors.orange;
+  return Colors.red;
+}</pre>
+                <div class="subgoal-list">
+                  <div class="subgoal">
+                    <strong>서브골 3. 행동과 계산은 함수로</strong>
+                    계산 규칙이 중심이면 위젯보다 함수가 더 적합합니다.
+                  </div>
+                  <div class="subgoal">
+                    <strong>서브골 4. 너무 일찍 쪼개지 않기</strong>
+                    반복도 없고 의미도 약한 한 줄짜리는 그대로 두는 판단도 배워야 합니다.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="compare-list">
+              <div class="compare-item">
+                <strong>핵심 문장</strong>
+                화면 조각을 빼면 위젯화, 계산과 행동을 빼면 함수화입니다.
+              </div>
+              <div class="compare-item">
+                <strong>이 단계의 목표</strong>
+                아직 코드를 많이 치는 게 아니라, 먼저 어디를 나눌지 눈으로 구분하는 감각을
+                만드는 데 집중합니다.
+              </div>
+              <div class="compare-item">
+                <strong>그대로 두는 예시도 있습니다</strong>
+                <code>const Divider(height: 24)</code>처럼 짧고 한 번만 쓰는 코드는 지금
+                당장 분리하지 않는 편이 더 읽기 쉽습니다.
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn btn-primary" type="button" data-start-prototype="true">
+                시작하기
+              </button>
+            </div>
+          </section>
+        `;
+
+        Array.from(document.querySelectorAll("[data-start-prototype='true']")).forEach((button) => {
+          button.addEventListener("click", () => {
+            setStage(1);
+          });
+        });
+      }
+
+      function renderClassificationStage() {
+        const question = classificationQuestions[state.classIndex];
+        const isLastQuestion = state.classIndex === classificationQuestions.length - 1;
+
+        workspace.innerHTML = `
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <span class="stage-badge">나눌지 말지 판단하기</span>
+                <h2>이 코드는 위젯화, 함수화, 그대로 둠 중 무엇이 가장 자연스러울까요?</h2>
+                <p>
+                  모든 문제를 나누는 건 아닙니다. 어떤 문제의 정답은 <strong>그대로 둠</strong>
+                  일 수도 있습니다.
+                </p>
+              </div>
+              <div class="counter">${state.classIndex + 1} / ${classificationQuestions.length}</div>
+            </div>
+
+            <div class="question-shell">
+              <div class="feedback warn">
+                <strong>문제</strong>
+                <div class="explanation" style="margin-top: 8px;">${question.prompt}</div>
+              </div>
+
+              <pre class="code-block">${escapeHtml(question.snippet)}</pre>
+
+              <div class="choice-grid">
+                ${Object.entries(choiceLabels)
+                  .map(
+                    ([key, label]) => `
+                      <button
+                        class="choice"
+                        data-choice="${key}"
+                        data-active="${state.classSelected === key}"
+                        data-state="${getChoiceState(
+                          key,
+                          question.answer,
+                          state.classSelected,
+                          state.classSubmitted,
+                        )}"
+                        type="button"
+                      >
+                        <div class="choice-title">${label.title}</div>
+                        <div class="choice-body">${label.body}</div>
+                      </button>
+                    `,
+                  )
+                  .join("")}
+              </div>
+
+              ${
+                state.classSubmitted
+                  ? `
+                    <div class="feedback ${state.classSelected === question.answer ? "good" : "bad"}">
+                      <strong>${
+                        state.classSelected === question.answer ? "정답입니다." : "이번 문제는 다시 보는 게 좋아요."
+                      }</strong>
+                      <div class="explanation" style="margin-top: 8px;">
+                        정답: <strong>${choiceLabels[question.answer].title}</strong>
+                      </div>
+                      <div class="explanation" style="margin-top: 8px;">${question.explanation}</div>
+                    </div>
+                  `
+                : ""
+            }
+
+              <div class="actions">
+                <button class="btn btn-secondary" id="submitClassification" ${
+                  state.classSelected && !state.classSubmitted ? "" : "disabled"
+                }>정답 확인</button>
+                ${
+                  state.classSubmitted
+                    ? `<button class="btn btn-primary" id="nextClassification">${
+                        isLastQuestion ? "다음 단계로" : "다음 문제"
+                      }</button>`
+                    : ""
+                }
+              </div>
+            </div>
+          </section>
+        `;
+
+        Array.from(document.querySelectorAll("[data-choice]")).forEach((button) => {
+          button.addEventListener("click", () => {
+            if (state.classSubmitted) {
+              return;
+            }
+
+            state.classSelected = button.getAttribute("data-choice");
+            renderClassificationStage();
+          });
+        });
+
+        document.getElementById("submitClassification").addEventListener("click", () => {
+          if (!state.classSelected || state.classSubmitted) {
+            return;
+          }
+
+          state.classSubmitted = true;
+          const correct = state.classSelected === question.answer;
+
+          if (correct) {
+            state.classCorrect += 1;
+          }
+
+          state.classificationHistory.push({
+            question: question.prompt,
+            selected: state.classSelected,
+            answer: question.answer,
+            correct,
+          });
+
+          renderClassificationStage();
+        });
+
+        const nextButton = document.getElementById("nextClassification");
+
+        if (nextButton) {
+          nextButton.addEventListener("click", () => {
+            if (isLastQuestion) {
+              setStage(2);
+              return;
+            }
+
+            state.classIndex += 1;
+            state.classSelected = "";
+            state.classSubmitted = false;
+            renderClassificationStage();
+          });
+        }
+      }
+
+      function renderOrderingStage() {
+        const problem = orderingProblems[state.orderIndex];
+        const isLastProblem = state.orderIndex === orderingProblems.length - 1;
+
+        workspace.innerHTML = `
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <span class="stage-badge">순서 맞추기</span>
+                <h2>${problem.title}</h2>
+                <p>
+                  초보자에게는 빈 화면에서 직접 작성시키는 것보다, 올바른 절차를 재구성하게
+                  하는 편이 부담이 적고 핵심 흐름을 잡기 쉽습니다.
+                </p>
+              </div>
+              <div class="counter">${state.orderIndex + 1} / ${orderingProblems.length}</div>
+            </div>
+
+            <div class="feedback warn">
+              <strong>목표 상황</strong>
+              <div class="explanation" style="margin-top: 8px;">
+                ${problem.prompt}
+              </div>
+            </div>
+
+            <p class="steps-hint">카드를 끌어 놓거나, 아래의 위로/아래로 버튼으로 순서를 바꿔보세요.</p>
+            <div class="steps">
+              ${state.orderItems
+                .map(
+                  (item, index) => `
+                    <div
+                      class="step"
+                      draggable="${state.orderChecked ? "false" : "true"}"
+                      data-order-index="${index}"
+                    >
+                      <strong>${index + 1}</strong>
+                      <p>${item}</p>
+                      <div class="step-actions">
+                        <button class="btn btn-ghost" type="button" data-move="up" data-index="${index}">위로</button>
+                        <button class="btn btn-ghost" type="button" data-move="down" data-index="${index}">아래로</button>
+                      </div>
+                      <span class="drag-handle" aria-hidden="true">⋮⋮</span>
+                    </div>
+                  `,
+                )
+                .join("")}
+            </div>
+
+            ${
+              state.orderChecked
+                ? `
+                  <div class="feedback ${state.orderCorrect ? "good" : "bad"}" style="margin-top: 18px;">
+                    <strong>${state.orderCorrect ? "순서가 좋습니다." : "순서를 다시 다듬으면 더 좋아집니다."}</strong>
+                    <div class="explanation" style="margin-top: 8px;">
+                      ${state.orderCorrect ? problem.success : problem.retry}
+                    </div>
+                    ${
+                      state.orderCorrect
+                        ? ""
+                        : `
+                          <div class="steps-solution">
+                            <strong>권장 순서</strong>
+                            <ol>
+                              ${problem.target.map((step) => `<li>${step}</li>`).join("")}
+                            </ol>
+                          </div>
+                        `
+                    }
+                  </div>
+                `
+                : ""
+            }
+
+            <div class="actions">
+              <button class="btn btn-secondary" id="checkOrdering" ${
+                state.orderChecked ? "disabled" : ""
+              }>순서 확인</button>
+              ${
+                state.orderChecked
+                  ? `<button class="btn btn-primary" id="nextOrdering">${
+                      isLastProblem ? "빈칸 채우기로" : "다음 Parsons 문제"
+                    }</button>`
+                  : ""
+              }
+            </div>
+          </section>
+        `;
+
+        Array.from(document.querySelectorAll("[data-move]")).forEach((button) => {
+          button.addEventListener("click", () => {
+            if (state.orderChecked) {
+              return;
+            }
+
+            const index = Number(button.getAttribute("data-index"));
+            const direction = button.getAttribute("data-move") === "up" ? -1 : 1;
+            moveOrderItem(index, direction);
+          });
+        });
+
+        Array.from(document.querySelectorAll("[data-order-index]")).forEach((item) => {
+          item.addEventListener("dragstart", (event) => {
+            if (state.orderChecked) {
+              event.preventDefault();
+              return;
+            }
+
+            const index = Number(item.getAttribute("data-order-index"));
+            state.draggedOrderIndex = index;
+            item.classList.add("is-dragging");
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/plain", String(index));
+          });
+
+          item.addEventListener("dragover", (event) => {
+            if (state.orderChecked) {
+              return;
+            }
+
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "move";
+            item.classList.add("is-drop-target");
+          });
+
+          item.addEventListener("dragleave", () => {
+            item.classList.remove("is-drop-target");
+          });
+
+          item.addEventListener("dragend", () => {
+            state.draggedOrderIndex = null;
+            item.classList.remove("is-dragging");
+            item.classList.remove("is-drop-target");
+            Array.from(document.querySelectorAll("[data-order-index]")).forEach((step) => {
+              step.classList.remove("is-drop-target");
+              step.classList.remove("is-dragging");
+            });
+          });
+
+          item.addEventListener("drop", (event) => {
+            if (state.orderChecked) {
+              return;
+            }
+
+            event.preventDefault();
+            const toIndex = Number(item.getAttribute("data-order-index"));
+            const fromIndex = Number(event.dataTransfer.getData("text/plain"));
+            reorderOrderItems(fromIndex, toIndex);
+          });
+        });
+
+        document.getElementById("checkOrdering").addEventListener("click", () => {
+          if (state.orderChecked) {
+            return;
+          }
+
+          state.orderChecked = true;
+          state.orderCorrect = state.orderItems.every((item, index) => item === problem.target[index]);
+
+          if (state.orderCorrect) {
+            state.orderCorrectCount += 1;
+          }
+
+          renderOrderingStage();
+        });
+
+        const nextButton = document.getElementById("nextOrdering");
+
+        if (nextButton) {
+          nextButton.addEventListener("click", () => {
+            if (isLastProblem) {
+              setStage(3);
+              return;
+            }
+
+            setOrderingProblem(state.orderIndex + 1);
+            renderOrderingStage();
+          });
+        }
+      }
+
+      function renderCompletionStage() {
+        const checks = getCompletionChecks();
+
+        workspace.innerHTML = `
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <span class="stage-badge">핵심만 완성하기</span>
+                <h2>핵심 빈칸만 채워서 위젯화와 함수화를 마무리합니다</h2>
+                <p>
+                  처음부터 다 쓰게 하기보다, 구조가 보이는 예제를 조금만 완성하게 하면 부담이
+                  줄고 핵심 문법이 더 잘 남습니다.
+                </p>
+              </div>
+            </div>
+
+            <div class="field-grid">
+              <div class="field-card">
+                <h3>위젯화 예제</h3>
+                <p class="hint">반복 카드 UI를 새 위젯으로 뺀다고 생각하고 빈칸을 채워보세요.</p>
+                <div class="fill-code">class StatCard extends
+  <input class="blank ${state.completionSubmitted ? (checks.widgetExtends ? "is-correct" : "is-wrong") : ""}" id="widgetExtends" placeholder="예: StatelessWidget" value="${escapeHtml(
+                    state.completionValues.widgetExtends,
+                  )}" /> {
+  const StatCard({super.key, required this.label});
+
+  final String label;
+
+  @override
+  Widget <input class="blank ${state.completionSubmitted ? (checks.widgetBuild ? "is-correct" : "is-wrong") : ""}" id="widgetBuild" placeholder="예: build" value="${escapeHtml(
+                    state.completionValues.widgetBuild,
+                  )}" />(BuildContext context) {
+    return Text(label);
+  }
+}</div>
+              </div>
+
+              <div class="field-card">
+                <h3>함수화 예제</h3>
+                <p class="hint">점수에 따라 색을 돌려주는 함수를 완성해 보세요. 함수 이름은 꼭 예시와 같지 않아도 됩니다.</p>
+                <div class="fill-code"><input class="blank ${state.completionSubmitted ? (checks.functionReturn ? "is-correct" : "is-wrong") : ""}" id="functionReturn" placeholder="예: Color" value="${escapeHtml(
+                  state.completionValues.functionReturn,
+                )}" /> <input class="blank ${state.completionSubmitted ? (checks.functionName ? "is-correct" : "is-wrong") : ""}" id="functionName" placeholder="예: getScoreColor" value="${escapeHtml(
+                  state.completionValues.functionName,
+                )}" />(int score) {
+  if (score &gt;= 80) return Colors.green;
+  if (score &gt;= 50) return Colors.orange;
+  return Colors.red;
+}</div>
+              </div>
+            </div>
+
+            ${
+              state.completionSubmitted
+                ? `
+                  <div class="feedback ${state.completionCorrect === 4 ? "good" : "warn"}" style="margin-top: 18px;">
+                    <strong>완성 결과: ${state.completionCorrect} / 4</strong>
+                    <div class="explanation" style="margin-top: 8px;">
+                      위젯화에서는 <code>StatelessWidget</code>, <code>build</code> 같은 구조를,
+                      함수화에서는 반환 타입과 “역할이 드러나는 이름”을 함께 떠올리는 연습이 중요합니다.
+                    </div>
+                    <div class="completion-review">
+                      <div class="completion-chip ${checks.widgetExtends ? "good" : "bad"}">위젯 기반 클래스: ${checks.widgetExtends ? "좋아요" : "StatelessWidget 권장"}</div>
+                      <div class="completion-chip ${checks.widgetBuild ? "good" : "bad"}">build 메서드 이름: ${checks.widgetBuild ? "좋아요" : "build가 맞습니다"}</div>
+                      <div class="completion-chip ${checks.functionReturn ? "good" : "bad"}">반환 타입: ${checks.functionReturn ? "좋아요" : "Color가 잘 맞습니다"}</div>
+                      <div class="completion-chip ${checks.functionName ? "good" : "bad"}">함수 이름: ${checks.functionName ? "좋아요" : "역할이 드러나는 함수 이름이면 충분합니다"}</div>
+                    </div>
+                  </div>
+                `
+                : ""
+            }
+
+            <div class="actions">
+              <button class="btn btn-secondary" id="checkCompletion" ${
+                state.completionSubmitted ? "disabled" : ""
+              }>빈칸 확인</button>
+              ${
+                state.completionSubmitted
+                  ? '<button class="btn btn-primary" id="nextRetrieval">회상 퀴즈로</button>'
+                  : ""
+              }
+            </div>
+          </section>
+        `;
+
+        ["widgetExtends", "widgetBuild", "functionName", "functionReturn"].forEach((key) => {
+          document.getElementById(key).addEventListener("input", (event) => {
+            state.completionValues[key] = event.target.value;
+          });
+        });
+
+        document.getElementById("checkCompletion").addEventListener("click", () => {
+          if (state.completionSubmitted) {
+            return;
+          }
+
+          const currentChecks = getCompletionChecks();
+          let score = 0;
+
+          if (currentChecks.widgetExtends) {
+            score += 1;
+          }
+
+          if (currentChecks.widgetBuild) {
+            score += 1;
+          }
+
+          if (currentChecks.functionName) {
+            score += 1;
+          }
+
+          if (currentChecks.functionReturn) {
+            score += 1;
+          }
+
+          state.completionCorrect = score;
+          state.completionSubmitted = true;
+          renderCompletionStage();
+        });
+
+        const nextButton = document.getElementById("nextRetrieval");
+
+        if (nextButton) {
+          nextButton.addEventListener("click", () => {
+            setStage(4);
+          });
+        }
+      }
+
+      function renderRetrievalStage() {
+        const answeredCount = retrievalQuestions.filter(
+          (question) => normalized(state.retrievalValues[question.id]).length > 0,
+        ).length;
+        const totalCorrect = state.classCorrect + state.orderCorrectCount + state.completionCorrect;
+
+        workspace.innerHTML = `
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <span class="stage-badge">코드 없이 다시 떠올리기</span>
+                <h2>마지막에는 설명 없이 다시 판단합니다</h2>
+                <p>
+                  조금 뒤에 다시 꺼내 보게 하는 회상 연습이 기억을 더 오래 남게 합니다. 이번엔
+                  코드 예시보다 상황 설명만 보고 답해보세요.
+                </p>
+              </div>
+              <div class="counter">${answeredCount} / ${retrievalQuestions.length} 답변 완료</div>
+            </div>
+
+            <div class="retrieval-list">
+              ${retrievalQuestions
+                .map(
+                  (question, index) => `
+                    <div class="retrieval-item">
+                      <h3>${index + 1}. ${question.prompt}</h3>
+                      <div class="option-row">
+                        ${Object.entries(choiceLabels)
+                          .map(
+                            ([key, label]) => `
+                              <label class="radio-chip">
+                                <input
+                                  type="radio"
+                                  name="${question.id}"
+                                  value="${key}"
+                                  ${state.retrievalValues[question.id] === key ? "checked" : ""}
+                                  ${state.retrievalSubmitted ? "disabled" : ""}
+                                />
+                                <span>${label.title}</span>
+                              </label>
+                            `,
+                          )
+                          .join("")}
+                      </div>
+                      ${
+                        state.retrievalSubmitted
+                          ? `
+                            <div class="retrieval-answer">
+                              <strong>${state.retrievalValues[question.id] === question.answer ? "정답" : "오답"}</strong>
+                              · 정답은 <strong>${choiceLabels[question.answer].title}</strong>입니다.
+                              <div style="margin-top: 6px;">${question.explanation}</div>
+                            </div>
+                          `
+                          : ""
+                      }
+                    </div>
+                  `,
+                )
+                .join("")}
+            </div>
+
+            ${
+              state.retrievalSubmitted
+                ? `
+                  <div class="result-grid">
+                    <div class="result-card">
+                      <p>분류 점수</p>
+                      <strong>${state.classCorrect} / ${classificationQuestions.length}</strong>
+                    </div>
+                    <div class="result-card">
+                      <p>Parsons 점수</p>
+                      <strong>${state.orderCorrectCount} / ${orderingProblems.length}</strong>
+                    </div>
+                    <div class="result-card">
+                      <p>빈칸 점수</p>
+                      <strong>${state.completionCorrect} / 4</strong>
+                    </div>
+                    <div class="result-card">
+                      <p>회상 점수</p>
+                      <strong>${state.retrievalCorrect} / ${retrievalQuestions.length}</strong>
+                    </div>
+                  </div>
+
+                  <div class="result-callout">
+                    <h3>${buildRecommendationTitle()}</h3>
+                    <p>${buildRecommendationBody(totalCorrect)}</p>
+                  </div>
+                `
+                : ""
+            }
+
+            <div class="actions">
+              <button class="btn btn-secondary" id="submitRetrieval" ${
+                answeredCount === retrievalQuestions.length && !state.retrievalSubmitted ? "" : "disabled"
+              }>회상 결과 보기</button>
+              ${
+                state.retrievalSubmitted
+                  ? '<button class="btn btn-primary" id="restartPrototype">처음부터 다시</button>'
+                  : ""
+              }
+            </div>
+          </section>
+        `;
+
+        Array.from(document.querySelectorAll("input[type='radio']")).forEach((input) => {
+          input.addEventListener("change", (event) => {
+            if (state.retrievalSubmitted) {
+              return;
+            }
+
+            state.retrievalValues[event.target.name] = event.target.value;
+            renderRetrievalStage();
+          });
+        });
+
+        const submitButton = document.getElementById("submitRetrieval");
+
+        submitButton.addEventListener("click", () => {
+          if (state.retrievalSubmitted) {
+            return;
+          }
+
+          let score = 0;
+
+          for (const question of retrievalQuestions) {
+            if (state.retrievalValues[question.id] === question.answer) {
+              score += 1;
+            }
+          }
+
+          state.retrievalCorrect = score;
+          state.retrievalSubmitted = true;
+          renderRetrievalStage();
+
+          if (typeof window.scrollTo === "function" && document.body) {
+            window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+          }
+        });
+
+        const restartButton = document.getElementById("restartPrototype");
+
+        if (restartButton) {
+          restartButton.addEventListener("click", () => {
+            window.location.reload();
+          });
+        }
+      }
+
+      function buildRecommendationTitle() {
+        if (
+          state.retrievalCorrect === retrievalQuestions.length &&
+          state.classCorrect >= 6 &&
+          state.orderCorrectCount === orderingProblems.length
+        ) {
+          return "판단 기준이 꽤 잘 잡혀 있습니다";
+        }
+
+        const widgetMistakes = state.classificationHistory.filter(
+          (item) => item.answer === "widget" && !item.correct,
+        ).length;
+        const functionMistakes = state.classificationHistory.filter(
+          (item) => item.answer === "function" && !item.correct,
+        ).length;
+
+        if (widgetMistakes > functionMistakes) {
+          return "다음엔 위젯화 판단을 조금 더 연습하면 좋겠습니다";
+        }
+
+        if (functionMistakes > widgetMistakes) {
+          return "다음엔 함수화 판단을 조금 더 연습하면 좋겠습니다";
+        }
+
+        return "한 번 더 돌리면 감각이 더 또렷해질 것 같습니다";
+      }
+
+      function buildRecommendationBody(totalCorrect) {
+        if (state.retrievalCorrect === retrievalQuestions.length && totalCorrect >= 11) {
+          return "반복되는 UI와 반복되는 계산을 구분하는 기준이 안정적입니다. 다음 단계에서는 실제 Flutter 예제를 조금 더 길게 보여주고, 직접 props 이름을 정하는 문제로 넘어가도 좋습니다.";
+        }
+
+        const widgetMistakes = state.classificationHistory.filter(
+          (item) => item.answer === "widget" && !item.correct,
+        ).length;
+        const functionMistakes = state.classificationHistory.filter(
+          (item) => item.answer === "function" && !item.correct,
+        ).length;
+
+        if (widgetMistakes > functionMistakes) {
+          return "반복되는 카드, 리스트 아이템, 프로필 조각처럼 화면에서 모양이 반복되는 예제를 더 많이 보면 좋습니다. 다음 버전에서는 같은 UI 덩어리에 어떤 props가 필요한지 고르는 문제를 추가하면 효과가 클 것 같습니다.";
+        }
+
+        if (functionMistakes > widgetMistakes) {
+          return "검증, 포맷팅, 색상 계산, 제출 처리처럼 행동과 규칙을 함수로 빼는 연습을 더 하는 편이 좋습니다. 다음 버전에서는 validator, formatAge, getScoreColor 류의 짧은 규칙 분리를 더 넣는 게 잘 맞습니다.";
+        }
+
+        return "아직은 ‘위젯으로 뺄까, 함수로 뺄까, 그냥 둘까’를 비교하는 문제가 가장 도움이 됩니다. 실제 앱에 넣는다면 문제를 짧게 쪼개고, 마지막에 같은 패턴을 다시 묻는 복습 라운드를 붙이는 방식이 좋습니다.";
+      }
+
+      applyInitialConfig();
+      heroStartButton.addEventListener("click", () => {
+        setStage(1);
+      });
+      render();
+    </script>
+  </body>
+</html>

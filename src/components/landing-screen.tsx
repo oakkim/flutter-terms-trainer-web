@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ArrowRight, Keyboard, Route, Share2 } from "lucide-react";
+import { ArrowRight, Keyboard, Route, Share2, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,12 +28,12 @@ export function LandingScreen({
           <span className="block text-primary">퀴즈로 다시 떠올려 보세요</span>
         </h1>
         <p className="max-w-3xl text-base leading-7 text-slate-700 sm:text-lg">
-          낱말 연습으로 철자와 표기를 손에 익히고, 용어 퀴즈로 개념을 다시 떠올려 보세요. 완전 일치
-          채점과 CPM 기록으로 연습 감각도 함께 확인할 수 있습니다.
+          낱말 연습으로 철자와 표기를 손에 익히고, 용어 퀴즈로 개념을 다시 떠올려 보세요. 구조화
+          연습에서는 위젯화와 함수화 판단도 단계형으로 익힐 수 있습니다.
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <FeatureCard
           description={`${termCount}개 고유 용어를 그대로 따라 입력`}
           icon={<Keyboard className="size-4 text-primary" />}
@@ -49,6 +49,11 @@ export function LandingScreen({
           icon={<Share2 className="size-4 text-primary" />}
           title="결과 보기"
         />
+        <FeatureCard
+          description="위젯화, 함수화, 그대로 두기를 단계형 실습으로 익히기"
+          icon={<Sparkles className="size-4 text-primary" />}
+          title="구조화 연습"
+        />
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -57,7 +62,7 @@ export function LandingScreen({
           <ArrowRight className="size-4" />
         </Button>
         <p className="text-sm text-muted-foreground">
-          바로 시작해서 낱말 연습 또는 용어 퀴즈를 고를 수 있습니다.
+          바로 시작해서 낱말 연습, 용어 퀴즈, 구조화 연습 중 원하는 모드를 고를 수 있습니다.
         </p>
       </div>
     </section>

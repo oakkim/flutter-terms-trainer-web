@@ -32,6 +32,19 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "게임 선택하기" })).toBeVisible();
   });
 
+  test("opens the refactor lab mode from selection", async () => {
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "게임 선택하기" }));
+    await user.click(screen.getByRole("button", { name: "위젯화 함수화 연습 선택하기" }));
+    await user.click(screen.getByRole("button", { name: "이 모드 시작" }));
+
+    expect(screen.getByText("위젯화 / 함수화 학습 랩")).toBeVisible();
+    expect(screen.getByRole("button", { name: "시작하기" })).toBeVisible();
+  });
+
   test("moves from landing to selection and then to word practice results", async () => {
     const user = userEvent.setup();
     const catalog = createMiniCatalog([
